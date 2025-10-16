@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan VoIP</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b69 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        .header {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00f5ff, #ff00ff, #ffff00);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 0.5rem;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #00f5ff;
+            margin-bottom: 1rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .player-setup {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group {
+            margin-bottom: 2rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #00f5ff;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group select option {
+            background-color: #1a1a1a; 
+            color: #ffffff;            
+        }
+
+        .form-group select option:checked,{
+
+        }
+        .form-group select option:hover {
+            background-color: #00f5ff; 
+            color: #00
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .avatar-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .avatar-option {
+            aspect-ratio: 1;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-option:hover, .avatar-option.selected {
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #00f5ff, #ff00ff);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 245, 255, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0px);
+        }
+        
+        .ai-companion {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.3), rgba(255, 0, 255, 0.3));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            z-index: 100;
+            border: 3px solid rgba(0, 245, 255, 0.5);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .ai-speech {
+            position: fixed;
+            bottom: 160px;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            max-width: 300px;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            display: none;
+            z-index: 101;
+        }
+        
+        .ai-speech.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes softGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 200, 255, 0.5); }
+    50% { box-shadow: 0 0 35px rgba(0, 255, 200, 0.8); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mission-invite-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 30, 60, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 9999;
+    display: none; 
+    align-items: center;   
+    justify-content: center; 
+}
+
+.mission-invite-modal {
+    background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+    border: 3px solid #4dd0e1;
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    animation: slideUp 0.5s ease-out, softGlow 3s infinite;
+}
+
+
+.invite-header {
+    margin-bottom: 1.5rem;
+    color: #00695c;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.invite-content {
+    margin-bottom: 1.5rem;
+    color: #004d40;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.invite-btn {
+    background: linear-gradient(45deg, #4dd0e1, #00acc1);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+.invite-btn:hover {
+    transform: scale(1.05);
+}
+
+.cancel-btn {
+    background: #b0bec5;
+    color: white;
+}
+
+        
+        @keyframes dangerSweep {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .level-map {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            padding: 3rem;
+            margin: 2rem 0;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            padding-bottom: 6rem;
+        }
+        
+        .level-map::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 15% 25%, rgba(0, 245, 255, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 85% 75%, rgba(255, 0, 255, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(0, 245, 255, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        
+        .map-path {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .treasure-path {
+            fill: none;
+            stroke: rgba(0, 245, 255, 0.6);
+            stroke-width: 4;
+            stroke-dasharray: 8, 4;
+            stroke-linecap: round;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.3));
+        }
+        
+        .treasure-path.completed {
+            stroke: #00f5ff;
+            stroke-width: 5;
+            opacity: 1;
+            filter: drop-shadow(0 0 12px rgba(0, 245, 255, 0.8));
+        }
+        
+        .level-nodes {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 400px;
+        }
+        
+        .level-node {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            border: 5px solid;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 16px rgba(0, 0, 0, 0.4),
+                inset 0 2px 8px rgba(255, 255, 255, 0.1);
+        }
+        
+        .level-icon {
+            font-size: 2.2rem;
+            margin-bottom: 2px;
+            line-height: 1;
+        }
+        
+        .level-number {
+            font-size: 1rem;
+            font-weight: bold;
+            line-height: 1;
+            text-shadow: 
+                0 0 8px currentColor,
+                2px 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid currentColor;
+        }
+        
+        .level-node:nth-child(1) {
+            top: 60%;
+            left: 10%;
+            transform: rotate(-5deg);
+        }
+        
+        .level-node:nth-child(2) {
+            top: 25%;
+            left: 25%;
+            transform: rotate(8deg);
+        }
+        
+        .level-node:nth-child(3) {
+            top: 15%;
+            left: 43.75%;
+            transform: rotate(-3deg);
+        }
+        
+        .level-node:nth-child(4) {
+            top: 45%;
+            left: 65%;
+            transform: rotate(6deg);
+        }
+        
+        .level-node:nth-child(5) {
+            top: 70%;
+            left: 90%;
+            transform: rotate(-8deg);
+        }
+        
+        .level-node.available {
+            border-color: #00f5ff;
+            color: #00f5ff;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.3), rgba(255, 255, 255, 0.1));
+            box-shadow: 
+                0 0 25px rgba(0, 245, 255, 0.6),
+                0 8px 16px rgba(0, 0, 0, 0.4),
+                inset 0 2px 8px rgba(0, 245, 255, 0.2);
+            animation: treasurePulse 2s infinite, levelBlink 1.5s infinite;
+        }
+        
+        .level-node.completed {
+            border-color: #ffd700;
+            color: #ffd700;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.6), rgba(255, 223, 0, 0.4));
+            box-shadow: 
+                0 0 35px rgba(255, 215, 0, 0.9),
+                0 0 60px rgba(255, 215, 0, 0.6),
+                0 0 100px rgba(255, 215, 0, 0.3),
+                0 8px 16px rgba(0, 0, 0, 0.4),
+                inset 0 2px 8px rgba(255, 255, 255, 0.4);
+            animation: goldenGlow 2.5s infinite, levelBlink 1.2s infinite;
+        }
+        
+        .level-node.locked {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.5);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.8));
+            cursor: not-allowed;
+            opacity: 0.4;
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.6),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            animation: lockedBlink 3s infinite;
+        }
+        
+        .level-node:hover:not(.locked) {
+            transform: scale(1.15) rotate(calc(var(--rotation, 0deg) + 5deg));
+            z-index: 10;
+            filter: brightness(1.2) drop-shadow(0 0 20px rgba(0, 245, 255, 0.6));
+        }
+        
+        .level-node:active:not(.locked) {
+            transform: scale(1.05) rotate(var(--rotation, 0deg));
+        }
+        
+        .level-node::after {
+            content: attr(data-level);
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #00f5ff;
+            text-shadow: 
+                0 0 8px rgba(0, 245, 255, 0.8),
+                2px 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 245, 255, 0.4);
+            backdrop-filter: blur(5px);
+        }
+        
+        .level-node.completed::after {
+            color: #ffd700;
+            text-shadow: 
+                0 0 15px rgba(255, 215, 0, 1),
+                0 0 25px rgba(255, 215, 0, 0.8),
+                2px 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .level-node.locked::after {
+            color: rgba(255, 255, 255, 0.5);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes treasurePulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 25px rgba(0, 245, 255, 0.6),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(0, 245, 255, 0.2);
+                transform: scale(1) rotate(var(--rotation, 0deg));
+            }
+            50% { 
+                box-shadow: 
+                    0 0 40px rgba(0, 245, 255, 0.9),
+                    0 0 60px rgba(0, 245, 255, 0.3),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(0, 245, 255, 0.4);
+                transform: scale(1.08) rotate(var(--rotation, 0deg));
+            }
+        }
+        
+        @keyframes treasureGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 35px rgba(255, 0, 255, 0.8),
+                    0 0 60px rgba(255, 0, 255, 0.4),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 50px rgba(255, 0, 255, 1),
+                    0 0 80px rgba(255, 0, 255, 0.6),
+                    0 0 120px rgba(255, 0, 255, 0.2),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(255, 255, 255, 0.5);
+            }
+        }
+        
+        @keyframes levelBlink {
+            0%, 70% { 
+                opacity: 1;
+                transform: scale(1) rotate(var(--rotation, 0deg));
+            }
+            85% { 
+                opacity: 0.3;
+                transform: scale(0.95) rotate(var(--rotation, 0deg));
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1) rotate(var(--rotation, 0deg));
+            }
+        }
+        
+        @keyframes goldenGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 35px rgba(255, 215, 0, 0.9),
+                    0 0 60px rgba(255, 215, 0, 0.6),
+                    0 0 100px rgba(255, 215, 0, 0.3),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(255, 255, 255, 0.4);
+                filter: brightness(1);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 50px rgba(255, 215, 0, 1),
+                    0 0 80px rgba(255, 215, 0, 0.8),
+                    0 0 120px rgba(255, 215, 0, 0.5),
+                    0 0 160px rgba(255, 215, 0, 0.2),
+                    0 8px 16px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 8px rgba(255, 255, 255, 0.6);
+                filter: brightness(1.3);
+            }
+        }
+        
+        @keyframes lockedBlink {
+            0%, 90% { 
+                opacity: 0.4;
+            }
+            95% { 
+                opacity: 0.6;
+            }
+            100% { 
+                opacity: 0.4;
+            }
+        }
+        
+        .inventory-panel {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            z-index: 100;
+            min-width: 250px;
+        }
+        
+        .inventory-title {
+            color: #00f5ff;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .inventory-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+        }
+        
+        .inventory-item.new-item {
+            animation: newItemGlow 2s ease-in-out;
+            border-color: #00f5ff;
+        }
+        
+        @keyframes newItemGlow {
+            0%, 100% { 
+                box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+            }
+        }
+        
+        .item-icon {
+            font-size: 1.8rem;
+            margin-right: 0.8rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 245, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+        
+        .item-description {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.2rem;
+        }
+        
+        .current-location {
+            background: rgba(0, 245, 255, 0.2);
+            border: 2px solid #00f5ff;
+            animation: locationPulse 2s infinite;
+        }
+        
+        @keyframes locationPulse {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 25px rgba(0, 245, 255, 0.8);
+            }
+        }
+        
+        .reward-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a3e, #2d1b69);
+            border: 3px solid #00f5ff;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            z-index: 1001;
+            box-shadow: 0 0 50px rgba(0, 245, 255, 0.5);
+            animation: rewardAppear 0.5s ease-out;
+        }
+        
+        @keyframes rewardAppear {
+            from { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            to { 
+                opacity: 1; 
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .reward-title {
+            color: #00f5ff;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+        }
+        
+        .reward-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 245, 255, 0.1);
+            border-radius: 10px;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+        }
+        
+        .reward-icon {
+            font-size: 3rem;
+            margin-right: 1rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.3), rgba(255, 0, 255, 0.2));
+            border-radius: 50%;
+            border: 3px solid rgba(0, 245, 255, 0.5);
+            box-shadow: 
+                0 0 20px rgba(0, 245, 255, 0.4),
+                inset 0 2px 8px rgba(255, 255, 255, 0.2);
+        }
+        
+        .reward-info {
+            text-align: left;
+        }
+        
+        .reward-name {
+            color: #00f5ff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .reward-desc {
+            color: #ffffff;
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        .game-screen {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+        }
+        
+        .question-container {
+            margin: 2rem 0;
+        }
+        
+        .question {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            color: #00f5ff;
+        }
+        
+        .options {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .option:hover {
+            background: rgba(0, 245, 255, 0.2);
+            border-color: #00f5ff;
+        }
+        
+        .option.correct {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: #00ff00;
+        }
+        
+        .option.incorrect {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: #ff0000;
+        }
+        
+        .score-display {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1rem;
+            border: 2px solid rgba(0, 245, 255, 0.3);
+            z-index: 100;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f5ff, #ff00ff);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .cutscene {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .cutscene-text {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            animation: typewriter 3s steps(50) 1s both;
+        }
+
+        
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
+        .certificate {
+            background: linear-gradient(135deg, #1a1a3e, #2d1b69);
+            border: 3px solid #00f5ff;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            margin: 2rem auto;
+            max-width: 600px;
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+            animation: certificateGlow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes certificateGlow {
+            0% { 
+                box-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+                transform: scale(1);
+            }
+            100% { 
+                box-shadow: 0 0 50px rgba(255, 0, 255, 0.7);
+                transform: scale(1.02);
+            }
+        }
+        
+        .certificate-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: #00f5ff;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            .player-setup {
+                padding: 2rem;
+            }
+            
+            .ai-companion {
+                width: 80px;
+                height: 80px;
+                font-size: 2rem;
+            }
+            
+            .ai-speech {
+                max-width: 250px;
+            }
+
+            .mission-warning-modal {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="stars" id="stars"></div>
+        
+        <header class="header">
+            <h1 class="game-title">Petualangan VoIP</h1>
+            <p class="subtitle">Sang Penjaga Suara Digital</p>
+        </header>
+        
+        <div class="score-display" id="scoreDisplay" style="display: none;">
+            <div> <img src="images/icon score.png" alt="icon score" width="30px"> Skor: <span id="currentScore">0</span> </div>
+            <div> <img src="images/icon level.png" alt="icon level" width="30px"> Level: <span id="currentLevel">1</span></div>
+            <div style="margin-top: 0.5rem;">
+                <button id="soundToggle" onclick="toggleSound()" style="background: none; border: none; color: #00f5ff; cursor: pointer; font-size: 1.2rem; margin-right: 0.5rem;">🔊</button>
+                <button id="voiceToggle" onclick="toggleAIVoice()" style="background: none; border: none; color: #ff00ff; cursor: pointer; font-size: 1.2rem;" title="Toggle AI Voice">🎤</button>
+            </div>
+        </div>
+
+        <div class="inventory-panel" id="inventoryPanel" style="display: none;">
+            <div class="inventory-title">🎒 Inventory</div>
+            <div id="inventoryItems">
+                <!-- Items will be added dynamically -->
+            </div>
+        </div>
+        
+        <main class="main-content">
+            <!-- Setup Screen -->
+            <div class="screen active" id="setupScreen">
+                <div class="player-setup">
+                    <h2 style="text-align: center; margin-bottom: 2rem; color: #00f5ff;">Persiapan Petualangan</h2>
+                    
+                    <div class="form-group">
+                        <label for="playerName">Nama Pemain:</label>
+                        <input type="text" id="playerName" placeholder="Masukkan nama kamu">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="playerClass">Kelas & Jurusan:</label>
+                        <select id="playerClass">
+                            <option value="">Pilih kelas dan jurusan</option>
+                            <option value="XI TKJ 1">XI TKJ 1</option>
+                            <option value="XI TKJ 2">XI TKJ 2</option>
+                            <option value="XI RPL 1">XI RPL 1</option>
+                            <option value="XI RPL 2">XI RPL 2</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Pilih Avatar:</label>
+                        <div class="avatar-selection">
+                            <div class="avatar-option" data-avatar= "<img src="images/avatar teknisi cewek.png" alt="avatar teknisi cewek" width="50px"> <img src="images/avatar teknisi cewek.png" alt="avatar teknisi cewek" width="50px"> </div>
+                            <div class="avatar-option" data-avatar= "<img src="images/avatar teknisi cowok.png" alt="avatar teknisi cowok" width="50px"> <img src="images/avatar teknisi cowok.png" alt="avatar teknisi cowok" width="50px"> </div>
+                            <div class="avatar-option" data-avatar= "<img src="images/avatar robot cewek.png" alt="avatar robot cewek" width="50px"> <img src="images/avatar robot cewek.png" alt="avatar robot cewek" width="50px"> </div>
+                            <div class="avatar-option" data-avatar= "<img src="images/avatar robot cowok.png" alt="avatar robot cowok" width="50px"> <img src="images/avatar robot cowok.png" alt="avatar robot cowok" width="50px"> </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="difficulty">Tingkat Kesulitan:</label>
+                        <select id="difficulty">
+                            <option value="easy">Mudah</option>
+                            <option value="medium">Sedang</option>
+                            <option value="hard">Sulit</option>
+                        </select>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button class="btn" onclick="playSound('click'); startGame()">Mulai Petualangan</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Intro Cutscene -->
+            <div class="screen" id="introScreen">
+                <div class="cutscene" style="text-align:center; color:white;">
+                <div id="loadingRobot" style="font-size: 4rem; margin-bottom: 1rem; animation: bounce 1s infinite;">
+                <img src="images/robot ai loading.png" alt="robot ai loading" width="150px">
+            </div>
+                <div id="loadingText" style="font-size: 1.5rem; margin-bottom: 2rem;">
+                 Guardian sedang bersiap...
+            </div>
+                <div class="progress-bar" style="width: 80%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: auto; overflow: hidden;">
+                <div id="progressFill" style="height: 100%; width: 0; background: linear-gradient(90deg,#00f5ff,#00ffaa); transition: width 0.3s;"></div>
+            </div>
+                <button id="startBtn" class="btn" onclick="goToMission()" 
+                style="margin-top:2rem; display:none; background: linear-gradient(45deg, #00f5ff, #00ffaa);">
+                🚀 MULAI MISI
+            </button>
+        </div>
+    </div>
+            
+            <!-- Level Map -->
+            <div class="screen" id="levelMapScreen">
+                <h2 style="text-align: center; margin-bottom: 2rem; color: #00f5ff;">🗺️ Peta Petualangan Digital</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="gameProgress"></div>
+                </div>
+                
+                <div class="level-map">
+                    <svg class="map-path" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
+                        <!-- Main treasure path with pirate-style curves -->
+                        <path class="treasure-path" id="treasurePath" 
+                              d="M 80 240 
+                                 C 120 220, 140 180, 160 160
+                                 C 180 140, 190 120, 200 100
+                                 C 210 80, 240 70, 280 75
+                                 C 320 80, 340 65, 350 60
+                                 C 360 55, 380 58, 420 70
+                                 C 460 82, 480 120, 500 150
+                                 C 520 180, 540 200, 580 210
+                                 C 620 220, 660 240, 690 260
+                                 C 710 270, 715 275, 720 280" 
+                              stroke-dasharray="8,4" />
+                        
+                        <!-- Decorative X marks and waypoints -->
+                        <g transform="translate(80, 240)" opacity="0.8">
+                            <path d="M -4,-4 L 4,4 M 4,-4 L -4,4" stroke="#00f5ff" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="0" cy="0" r="8" fill="none" stroke="#00f5ff" stroke-width="2" opacity="0.4"/>
+                        </g>
+                        
+                        <g transform="translate(200, 100)" opacity="0.6">
+                            <path d="M -3,-3 L 3,3 M 3,-3 L -3,3" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="0" cy="0" r="6" fill="none" stroke="#00f5ff" stroke-width="1" opacity="0.3"/>
+                        </g>
+                        
+                        <g transform="translate(350, 60)" opacity="0.6">
+                            <path d="M -3,-3 L 3,3 M 3,-3 L -3,3" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="0" cy="0" r="6" fill="none" stroke="#00f5ff" stroke-width="1" opacity="0.3"/>
+                        </g>
+                        
+                        <g transform="translate(520, 180)" opacity="0.6">
+                            <path d="M -3,-3 L 3,3 M 3,-3 L -3,3" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="0" cy="0" r="6" fill="none" stroke="#00f5ff" stroke-width="1" opacity="0.3"/>
+                        </g>
+                        
+                        <!-- Final treasure location -->
+                        <g transform="translate(720, 280)" opacity="0.9">
+                            <path d="M -5,-5 L 5,5 M 5,-5 L -5,5" stroke="#ff00ff" stroke-width="4" stroke-linecap="round"/>
+                            <circle cx="0" cy="0" r="12" fill="none" stroke="#ff00ff" stroke-width="3" opacity="0.6"/>
+                            <circle cx="0" cy="0" r="6" fill="#ff00ff" opacity="0.3"/>
+                        </g>
+                        
+                        <!-- Pirate map decorative elements -->
+                        <!-- Sea monsters and obstacles -->
+                        <g transform="translate(150, 300)" opacity="0.4">
+                            <path d="M 0,0 C -10,-5 -15,0 -10,8 C -5,15 5,15 10,8 C 15,0 10,-5 0,0 Z" 
+                                  fill="none" stroke="#00f5ff" stroke-width="1"/>
+                            <circle cx="-5" cy="3" r="1" fill="#00f5ff"/>
+                            <circle cx="5" cy="3" r="1" fill="#00f5ff"/>
+                        </g>
+                        
+                        <g transform="translate(450, 320)" opacity="0.4">
+                            <path d="M 0,0 C -8,-3 -12,0 -8,6 C -4,12 4,12 8,6 C 12,0 8,-3 0,0 Z" 
+                                  fill="none" stroke="#00f5ff" stroke-width="1"/>
+                            <circle cx="-3" cy="2" r="1" fill="#00f5ff"/>
+                            <circle cx="3" cy="2" r="1" fill="#00f5ff"/>
+                        </g>
+                        
+                        <!-- Compass Rose (enhanced) -->
+                        <g transform="translate(50, 50)" opacity="0.5">
+                            <circle cx="0" cy="0" r="30" fill="none" stroke="#00f5ff" stroke-width="2"/>
+                            <circle cx="0" cy="0" r="20" fill="none" stroke="#00f5ff" stroke-width="1" opacity="0.6"/>
+                            <circle cx="0" cy="0" r="10" fill="none" stroke="#00f5ff" stroke-width="1" opacity="0.4"/>
+                            
+                            <!-- Main compass points -->
+                            <path d="M 0,-25 L 4,-15 L 0,-20 L -4,-15 Z" fill="#00f5ff"/>
+                            <path d="M 25,0 L 15,4 L 20,0 L 15,-4 Z" fill="#00f5ff" opacity="0.7"/>
+                            <path d="M 0,25 L -4,15 L 0,20 L 4,15 Z" fill="#00f5ff" opacity="0.7"/>
+                            <path d="M -25,0 L -15,-4 L -20,0 L -15,4 Z" fill="#00f5ff" opacity="0.7"/>
+                            
+                            <!-- Compass labels -->
+                            <text x="0" y="-35" text-anchor="middle" fill="#00f5ff" font-size="10" font-weight="bold">N</text>
+                            <text x="35" y="5" text-anchor="middle" fill="#00f5ff" font-size="8" opacity="0.8">E</text>
+                            <text x="0" y="45" text-anchor="middle" fill="#00f5ff" font-size="8" opacity="0.8">S</text>
+                            <text x="-35" y="5" text-anchor="middle" fill="#00f5ff" font-size="8" opacity="0.8">W</text>
+                        </g>
+                        
+                        <!-- Wind roses and decorative swirls -->
+                        <g transform="translate(650, 80)" opacity="0.3">
+                            <path d="M 0,0 C 5,-10 15,-10 20,0 C 15,10 5,10 0,0" 
+                                  fill="none" stroke="#00f5ff" stroke-width="1"/>
+                            <path d="M 10,-5 C 15,-8 18,-5 15,0 C 12,5 8,3 10,-5" 
+                                  fill="none" stroke="#00f5ff" stroke-width="1"/>
+                        </g>
+                        
+                        <g transform="translate(100, 350)" opacity="0.3">
+                            <path d="M 0,0 C -8,-5 -12,0 -8,8 C -4,15 4,12 8,5 C 12,-2 8,-8 0,0" 
+                                  fill="none" stroke="#00f5ff" stroke-width="1"/>
+                        </g>
+                        
+                        <!-- Distance markers along the path -->
+                        <g transform="translate(140, 180)" opacity="0.4">
+                            <line x1="-3" y1="-3" x2="3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                            <line x1="3" y1="-3" x2="-3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                        </g>
+                        
+                        <g transform="translate(280, 75)" opacity="0.4">
+                            <line x1="-3" y1="-3" x2="3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                            <line x1="3" y1="-3" x2="-3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                        </g>
+                        
+                        <g transform="translate(580, 210)" opacity="0.4">
+                            <line x1="-3" y1="-3" x2="3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                            <line x1="3" y1="-3" x2="-3" y2="3" stroke="#00f5ff" stroke-width="1"/>
+                        </g>
+                        
+                        <!-- Danger zones (skull and crossbones style) -->
+                        <g transform="translate(300, 300)" opacity="0.3">
+                            <circle cx="0" cy="0" r="4" fill="none" stroke="#ff00ff" stroke-width="1"/>
+                            <path d="M -2,-1 L 2,-1 M -2,1 L 2,1" stroke="#ff00ff" stroke-width="1"/>
+                            <path d="M 0,2 L -3,6 M 0,2 L 3,6" stroke="#ff00ff" stroke-width="1"/>
+                        </g>
+                        
+                        <g transform="translate(600, 350)" opacity="0.3">
+                            <circle cx="0" cy="0" r="3" fill="none" stroke="#ff00ff" stroke-width="1"/>
+                            <path d="M -1.5,-0.5 L 1.5,-0.5 M -1.5,0.5 L 1.5,0.5" stroke="#ff00ff" stroke-width="1"/>
+                            <path d="M 0,1.5 L -2,4 M 0,1.5 L 2,4" stroke="#ff00ff" stroke-width="1"/>
+                        </g>
+                    </svg>
+                    
+                    <div class="level-nodes">
+                        <div class="level-node available" id="level1" data-level="Level 1" style="--rotation: -5deg;">
+                            <img src="images/icon level 1.png" alt="icon level 1" width="70px">
+                        </div>
+                        
+                        <div class="level-node locked" data-level="Level 2" id="level2" style="--rotation: 8deg;">
+                            <img src="images/icon level 2.png" alt="icon level 2" width="70px">
+                        </div>
+                        
+                        <div class="level-node locked" data-level="Level 3" id="level3" style="--rotation: -3deg;">
+                            <img src="images/icon level 3.png" alt="icon level 3" width="70px">
+                        </div>
+                        
+                        <div class="level-node locked" data-level="Level 4" id="level4" style="--rotation: 6deg;">
+                            <img src="images/icon level 4.png" alt="icon level 4" width="70px">
+                        </div>
+                        
+                        <div class="level-node locked" data-level="Level 5" id="level5" style="--rotation: -8deg;">
+                            <img src="images/icon level 5.png" alt="icon level 5" width="70px">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 2rem; color: rgba(255, 255, 255, 0.8);">
+                    <p>💙 = Level Tersedia | ⚫ = Level Terkunci | 🏆 = Level Selesai (Emas)</p>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div class="screen" id="gameScreen">
+                <div class="game-screen">
+                    <h2 id="levelTitle" style="text-align: center; color: #00f5ff; margin-bottom: 2rem;"></h2>
+                    
+                    <div id="materialSection" style="margin-bottom: 2rem;">
+                        <h3 style="color: #ff00ff; margin-bottom: 1rem;">📚 Materi Pembelajaran</h3>
+                        <div id="materialContent" style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;"></div>
+                    </div>
+                    
+                    <div class="question-container">
+                        <h3 style="color: #ff00ff; margin-bottom: 1rem;">❓ Tantangan</h3>
+                        <div class="question" id="questionText"></div>
+                        <div class="options" id="optionsContainer"></div>
+                    </div>
+                    
+                    <div id="buttonContainer" style="text-align: center; margin-top: 2rem;">
+                        <button class="btn" id="backButton" onclick="playSound('click'); showLevelMap()">Kembali ke Peta</button>
+                        <button class="btn" id="nextButton" onclick="playSound('click'); nextQuestion()" style="display: none;">Lanjut</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Final Screen -->
+            <div class="screen" id="finalScreen">
+                <div class="cutscene">
+                    <h2 style="color: #00ff00; margin-bottom: 2rem;">🎉 MISI BERHASIL! 🎉</h2>
+                    <div class="cutscene-text">
+                        Selamat! Kamu telah berhasil mengalahkan Virus Hening dan memulihkan jaringan VoIP global. Komunikasi digital kembali normal berkat keahlianmu!
+                    </div>
+                    
+                    <div class="certificate">
+                        <div class="certificate-title">🏆 SERTIFIKAT DIGITAL 🏆</div>
+                        <h3>Guardian of Echo</h3>
+                        <p style="margin: 1rem 0;">Diberikan kepada:</p>
+                        <h2 id="certificateName" style="color: #00f5ff;"></h2>
+                        <p style="margin: 1rem 0;">Sebagai Penjaga Komunikasi Digital Masa Depan</p>
+                        <p>Skor Akhir: <span id="finalScore"></span></p>
+                    </div>
+
+                    <button class="btn" onclick="playSound('click'); restartGame()">Main Lagi</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mission Invitation Modal -->
+        <div class="mission-invite-overlay" id="missionInvitation" style="display: none;">
+            <div class="mission-invite-modal"
+            style="background: linear-gradient(135deg, #0d1b2a, #1b263b); border: 3px solid #00f5ff; box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);">
+
+        <div class="warning-header">
+            <h2 style="color: #00f5ff; font-size: 2rem; text-shadow: 0 0 15px #00f5ff; animation: slideUp 0.8s ease;">
+                🌟 Misi Baru Menantimu 🌟
+            </h2>
+        </div>
+
+        <div class="warning-content">
+            <div style="color: #ffffff; font-size: 1.2rem; margin: 1rem 0; font-weight: bold;">
+                ✨ Petualangan Segera Dimulai ✨
+            </div>
+
+            <p style="color: #dbeafe; font-size: 1.1rem; margin: 1rem 0;">
+                Kamu akan menjelajahi <strong style="color: #00f5ff;">Dunia VoIP</strong>!
+            </p>
+
+            <div id="missionDetails"
+                style="background: rgba(0, 245, 255, 0.1); padding: 1rem; border-radius: 10px; margin: 1rem 0; border: 2px solid #00f5ff;">
+                <div style="color: #00f5ff; font-weight: bold;">DETAIL MISI:</div>
+                <div id="missionDescription" style="color: #ffffff; margin-top: 0.5rem;">
+                    Pelajari dan pahami sistem komunikasi agar Guardian bisa mengembalikan jaringan.
+                </div>
+            </div>
+
+            <div style="color: #93c5fd; font-size: 0.9rem;">
+                💡 Siapkan dirimu, Guardian — masa depan komunikasi menantimu!
+            </div>
+        </div>
+
+        <div class="warning-buttons" style="margin-top: 2rem; text-align: center;">
+            <button class="btn" onclick="acceptMission()" 
+                style="background: linear-gradient(45deg, #00f5ff, #00ffaa); margin-right: 1rem; animation: buttonPulse 1.5s infinite; color:#000;">
+                🚀 MULAI MISI
+            </button>
+            <button class="btn" onclick="cancelMission()" 
+                style="background: linear-gradient(45deg, #666666, #999999);">
+                ❌ NANTI DULU
+            </button>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Reward Notification -->
+        <div class="reward-notification" id="rewardNotification" style="display: none;">
+            <div class="reward-title">🎉 ITEM BARU DIPEROLEH! 🎉</div>
+            <div class="reward-item" id="rewardItem">
+                <div class="reward-icon" id="rewardIcon">🔧</div>
+                <div class="reward-info">
+                    <div class="reward-name" id="rewardName">Item Name</div>
+                    <div class="reward-desc" id="rewardDesc">Item Description</div>
+                </div>
+            </div>
+            <button class="btn" onclick="closeRewardNotification()" style="margin-top: 1rem;">
+                ✨ TERIMA ITEM
+            </button>
+        </div>
+
+        <!-- AI Companion -->
+        <div class="ai-companion" id="aiCompanion" onclick="toggleAISpeech()">
+            <img src="images/ai karakter.png" alt="karakter ai" width="200px">
+        </div>
+        
+        <div class="ai-speech" id="aiSpeech">
+            <div id="aiMessage">Halo! Aku Ananda, AI pendampingmu. Klik aku kapan saja untuk mendapat bantuan!</div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            playerName: '',
+            playerClass: '',
+            playerAvatar: '',
+            difficulty: 'medium',
+            currentLevel: 1,
+            score: 0,
+            scores: {}, 
+            completedLevels: [],
+            currentQuestionIndex: 0
+
+        };
+
+        // Item Database
+        const gameItems = {
+            'voip-analyzer': {
+                name: 'VoIP Analyzer',
+                icon: '📡',
+                description: 'Menunjukkan lokasi saat ini di peta'
+            },
+            'sound-decoder': {
+                name: 'Sound Decoder',
+                icon: '🔊',
+                description: 'Memecahkan kode suara digital'
+            },
+            'network-scanner': {
+                name: 'Network Scanner',
+                icon: '🌐',
+                description: 'Memindai jaringan VoIP'
+            },
+            'protocol-key': {
+                name: 'Protocol Key',
+                icon: '🔑',
+                description: 'Membuka protokol komunikasi'
+            },
+            'security-shield': {
+                name: 'Security Shield',
+                icon: '🛡️',
+                description: 'Melindungi dari serangan cyber'
+            },
+            'master-codec': {
+                name: 'Master Codec',
+                icon: '💎',
+                description: 'Codec utama untuk semua aplikasi VoIP'
+            }
+        };
+
+
+        // Game Data
+        const levels = {
+            1: {
+                title: "Level 1: Pulau Suara",
+                material: "VoIP (Voice over Internet Protocol) adalah teknologi yang memungkinkan komunikasi suara melalui jaringan internet. Teknologi ini pertama kali dikembangkan pada tahun 1995 dan telah merevolusi cara kita berkomunikasi, mengubah panggilan telepon tradisional menjadi data digital yang dapat dikirim melalui internet.",
+                questions: [
+                    {
+                        question: "Apa kepanjangan dari VoIP?",
+                        options: ["Voice over Internet Protocol", "Video over Internet Protocol", "Virtual over Internet Protocol", "Voice on Internet Platform"],
+                        correct: 0,
+                        explanation: "VoIP adalah singkatan dari Voice over Internet Protocol. Teknologi ini memungkinkan suara manusia diubah menjadi paket data digital yang dapat ditransmisikan melalui jaringan internet. Jadi, VoIP bukan sekadar telepon biasa, tapi sebuah sistem komunikasi berbasis protokol internet."
+                    },
+                    {
+                        question: "Kapan teknologi VoIP pertama kali dikembangkan?",
+                        options: ["1990", "1995", "2000", "2005"],
+                        correct: 1,
+                        explanation: "Teknologi VoIP mulai dikembangkan secara serius pada tahun 1995. Pada masa itu, perusahaan bernama VocalTec memperkenalkan 'Internet Phone', salah satu aplikasi VoIP komersial pertama. Sejak saat itu, VoIP terus berkembang dan menjadi pondasi komunikasi digital modern."
+                    },
+                    {
+                        question: "Apa keuntungan utama VoIP dibandingkan telepon tradisional?",
+                        options: [
+                                "VoIP lebih mahal, sedangkan telepon tradisional lebih murah",
+                                "VoIP kualitas suaranya lebih buruk, sedangkan telepon tradisional lebih baik",
+                                "VoIP biayanya lebih murah, sedangkan telepon tradisional lebih mahal",
+                                "VoIP tidak bisa digunakan, sedangkan telepon tradisional selalu bisa"
+                            ],
+                        correct: 2,
+                        explanation: "Keuntungan utama VoIP adalah biayanya jauh lebih murah dibandingkan telepon tradisional, terutama untuk panggilan jarak jauh/internasional. Dengan memanfaatkan internet, biaya komunikasi bisa ditekan, bahkan sering kali gratis jika antar aplikasi VoIP."
+                    },
+                    {
+                        question: "Bagaimana cara kerja dasar VoIP?",
+                        options: ["Mengubah suara menjadi sinyal analog", "Mengubah suara menjadi data digital", "Menggunakan kabel telepon biasa", "Tidak memerlukan internet"],
+                        correct: 1,
+                        explanation: "Cara kerja VoIP adalah dengan mengubah suara menjadi data digital (paket data), kemudian mengirimkannya melalui jaringan internet menggunakan protokol khusus. Saat sampai di penerima, data tersebut dikonversi kembali menjadi suara. Proses ini mirip pengiriman file, tetapi dilakukan dalam waktu nyata (real-time)."
+                    },
+                    {
+                        question: "Apa yang dibutuhkan untuk menggunakan VoIP?",
+                        options: ["Hanya telepon biasa", "Koneksi internet dan perangkat VoIP", "Kabel telepon khusus", "Tidak perlu apa-apa"],
+                        correct: 1,
+                        explanation: "Untuk menggunakan VoIP, dibutuhkan koneksi internet yang stabil serta perangkat yang mendukung, seperti IP Phone, komputer, atau smartphone dengan aplikasi VoIP. Tanpa internet, VoIP tidak bisa berfungsi karena semua data suara dikirim dalam bentuk paket data melalui jaringan tersebut."
+                    },
+                    {
+                        question: "Contoh aplikasi VoIP yang populer adalah...",
+                        options: ["Microsoft Word", "Skype", "Photoshop", "Calculator"],
+                        correct: 1,
+                        explanation: "Skype adalah salah satu aplikasi VoIP populer yang memungkinkan panggilan suara, video, hingga konferensi online. Skype menjadi pelopor aplikasi VoIP modern sebelum hadirnya WhatsApp Call, Zoom, dan Google Meet yang kini lebih sering digunakan."
+                    },
+                    {
+                        question: "Apa perbedaan utama VoIP dengan telepon tradisional?",
+                        options: [
+                                "VoIP menggunakan internet, sedangkan telepon tradisional menggunakan kabel tembaga",
+                                "Tidak ada perbedaan antara VoIP dan telepon tradisional",
+                                "VoIP lebih lambat, sedangkan telepon tradisional lebih cepat",
+                                "VoIP tidak bisa mengirim suara, sedangkan telepon tradisional bisa"
+                            ],
+                        correct: 0,
+                        explanation: "Perbedaan mendasar ada pada media transmisinya: VoIP menggunakan jaringan internet untuk mengirim suara, sedangkan telepon tradisional menggunakan jaringan PSTN berbasis kabel tembaga. Karena itu VoIP lebih fleksibel dan murah."
+
+                    },
+                    {
+                        question: "Kualitas panggilan VoIP tergantung pada...",
+                        options: ["Warna telepon", "Kualitas koneksi internet", "Cuaca", "Waktu"],
+                        correct: 1,
+                        explanation: "Kualitas VoIP sangat bergantung pada kualitas koneksi internet. Jika bandwidth cukup dan latensi rendah, kualitas suara bisa sejernih telepon tradisional. Namun, jika koneksi buruk, suara bisa terputus-putus atau delay."
+                    },
+                    {
+                        question: "VoIP dapat digunakan untuk...",
+                        options: ["Hanya panggilan suara", "Panggilan suara, video, dan messaging", "Hanya mengirim email", "Hanya browsing internet"],
+                        correct: 1,
+                        explanation: "VoIP tidak terbatas pada panggilan suara. Teknologi ini juga mendukung video call, konferensi online, hingga chat (messaging). Karena itu, aplikasi seperti Zoom atau WhatsApp Call menjadi platform komunikasi terpadu (unified communication)."
+                    },
+                    {
+                        question: "Siapa yang pertama kali menciptakan konsep VoIP?",
+                        options: ["Marian Croak", "Alexander Graham Bell", "Steve Jobs", "Bill Gates"],
+                        correct: 0,
+                        explanation: "Marian Croak dikenal sebagai tokoh penting dalam pengembangan VoIP modern. Ia mengajukan lebih dari 100 paten terkait teknologi VoIP, yang kemudian menjadi dasar layanan komunikasi internet seperti Skype dan Google Voice."
+                    }
+                    
+
+                ]
+            },
+            2: {
+                title: "Level 2: Kota Kabel",
+                material: "Perangkat VoIP terdiri dari hardware dan software. Hardware meliputi IP Phone (telepon khusus VoIP), Gateway (penghubung jaringan), dan Server VoIP. Software meliputi Softphone (aplikasi telepon di komputer/HP), codec untuk kompresi suara, dan sistem manajemen panggilan.",
+                questions: [
+                    {
+                        question: "Apa fungsi utama Gateway dalam sistem VoIP?",
+                        options: ["Menyimpan data", "Menghubungkan jaringan yang berbeda", "Mengompres suara", "Mengatur panggilan"],
+                        correct: 1,
+                        explanation: "Gateway berfungsi sebagai penghubung antara jaringan VoIP dengan jaringan lain (misalnya PSTN atau jaringan telepon tradisional). Tanpa gateway, VoIP tidak bisa berkomunikasi keluar dari sistemnya."
+                    },
+                    {
+                        question: "Softphone adalah...",
+                        options: ["Telepon fisik", "Aplikasi telepon di komputer", "Perangkat keras", "Kabel jaringan"],
+                        correct: 1,
+                        explanation: "Softphone adalah aplikasi di komputer atau smartphone yang berfungsi seperti telepon. Dengan softphone, pengguna bisa melakukan panggilan VoIP tanpa perangkat fisik khusus."
+
+                    },
+                    {
+                        question: "Codec dalam VoIP berfungsi untuk...",
+                        options: ["Mengatur panggilan", "Mengompres dan dekompresi suara", "Menyimpan kontak", "Mengatur jaringan"],
+                        correct: 1,
+                        explanation: "Codec (coder-decoder) digunakan untuk mengompresi suara agar lebih efisien ditransmisikan melalui jaringan, lalu mendekompresinya kembali di sisi penerima."
+                    },
+                    {
+                        question: "Contoh perangkat keras VoIP adalah...",
+                        options: ["Skype", "WhatsApp", "IP Phone", "Codec"],
+                        correct: 2,
+                        explanation: "IP Phone adalah perangkat keras khusus untuk VoIP, mirip telepon biasa tapi menggunakan jaringan IP. Sementara Skype/WhatsApp adalah software, dan codec adalah algoritma."
+                    },
+                    {
+                        question: "Apa fungsi Server VoIP?",
+                        options: ["Menyimpan foto", "Mengatur dan mengelola panggilan VoIP", "Bermain game", "Mengedit video"],
+                        correct: 1,
+                        explanation: "Server VoIP bertugas mengatur, mengelola, dan menghubungkan panggilan VoIP antar pengguna, serta menjalankan layanan seperti registrasi pengguna dan routing panggilan."
+                    },
+                    {
+                        question: "Perbedaan utama IP Phone dengan telepon biasa adalah...",
+                        options: [
+                                "IP Phone terhubung ke jaringan internet, sedangkan telepon biasa terhubung ke jaringan PSTN",
+                                "Tidak ada perbedaan antara IP Phone dan telepon biasa",
+                                "IP Phone lebih berat, sedangkan telepon biasa lebih ringan",
+                                "IP Phone hanya berbeda warnanya dengan telepon biasa"
+                            ],
+                        correct: 0,
+                        explanation: "IP Phone menggunakan jaringan internet dengan protokol IP, sedangkan telepon biasa menggunakan jaringan PSTN. Inilah perbedaan utama yang membuat IP Phone lebih fleksibel untuk komunikasi modern."
+
+                    },
+                    {
+                        question: "Apa itu PBX dalam sistem VoIP?",
+                        options: ["Personal Box", "Private Branch Exchange", "Public Broadcasting", "Phone Box"],
+                        correct: 1,
+                        explanation: "PBX (Private Branch Exchange) adalah sistem telepon internal dalam sebuah organisasi yang memungkinkan pengguna untuk saling terhubung tanpa harus keluar ke jaringan publik."
+                    },
+                    {
+                        question: "Fungsi utama dari Session Border Controller (SBC) adalah...",
+                        options: ["Mengompres video", "Mengontrol dan mengamankan sesi VoIP", "Menyimpan kontak", "Memutar musik"],
+                        correct: 1,
+                        explanation: "SBC bertugas mengontrol aliran sinyal VoIP dan memberikan lapisan keamanan tambahan, seperti mencegah serangan, mengatur QoS (Quality of Service), serta mengatur interkoneksi antar jaringan VoIP."
+                    },
+                    {
+                        question: "Apa yang dimaksud dengan ATA (Analog Telephone Adapter)?",
+                        options: ["Perangkat untuk menghubungkan telepon analog ke jaringan VoIP", "Aplikasi mobile", "Jenis codec", "Server VoIP"],
+                        correct: 0,
+                        explanation: "ATA memungkinkan telepon analog biasa digunakan dalam jaringan VoIP dengan cara mengubah sinyal analog menjadi digital berbasis IP."
+                    },
+                    {
+                        question: "Contoh codec audio yang umum digunakan dalam VoIP adalah...",
+                        options: ["MP3", "G.711", "JPEG", "ZIP"],
+                        correct: 1,
+                        explanation: "Codec G.711 adalah standar yang paling sering digunakan dalam VoIP karena menghasilkan kualitas suara tinggi dengan kompresi minimal."
+                    }
+                ]
+            },
+            3: {
+                title: "Level 3: Menara Protokol",
+                material: "Protokol VoIP utama adalah SIP (Session Initiation Protocol) untuk mengatur panggilan, RTP (Real-time Transport Protocol) untuk mengirim data suara, dan H.323 sebagai standar komunikasi multimedia. SIP paling populer karena fleksibel dan mudah diintegrasikan.",
+                questions: [
+                    {
+                        question: "Protokol apa yang digunakan untuk mengatur panggilan VoIP?",
+                        options: ["RTP", "SIP", "HTTP", "FTP"],
+                        correct: 1,
+                        explanation: "Jawaban benar adalah SIP (Session Initiation Protocol). SIP bertugas memulai, mengubah, dan mengakhiri sesi komunikasi suara atau video. Tanpa SIP, VoIP tidak bisa membangun jalur komunikasi antar pengguna."
+                    },
+                    {
+                        question: "RTP berfungsi untuk...",
+                        options: ["Mengatur panggilan", "Mengirim data suara real-time", "Keamanan", "Kompresi"],
+                        correct: 1,
+                        explanation: "RTP (Real-time Transport Protocol) digunakan untuk mengirimkan data audio maupun video secara real-time. RTP memastikan suara sampai dengan urutan yang benar dan secepat mungkin, meskipun ada keterlambatan jaringan."
+                    },
+                    {
+                        question: "Mengapa SIP lebih populer dibandingkan H.323?",
+                        options: [
+                                "SIP lebih fleksibel dan mudah diintegrasikan, sedangkan H.323 lebih kompleks dan sulit diimplementasikan",
+                                "Tidak ada perbedaan, keduanya sama saja",
+                                "SIP lebih lambat, sedangkan H.323 lebih cepat",
+                                "SIP lebih mahal, sedangkan H.323 lebih murah"
+                            ],
+                        correct: 0,
+                        explanation: "SIP lebih populer karena fleksibel, ringan, dan mudah dipadukan dengan aplikasi lain. Sebaliknya, H.323 lebih kompleks, menggunakan banyak protokol tambahan, sehingga lebih sulit diterapkan dalam aplikasi modern."
+
+                    },
+                    {
+                        question: "Apa kepanjangan dari H.323?",
+                        options: ["Hypertext Protocol 323", "Hardware Protocol 323", "ITU-T Recommendation H.323", "Home Protocol 323"],
+                        correct: 2,
+                        explanation: "H.323 adalah standar ITU-T untuk komunikasi multimedia berbasis jaringan paket. Standar ini mendukung audio, video, dan data conferencing, tetapi lebih berat dibanding SIP."
+                    },
+                    {
+                        question: "Port default yang digunakan SIP adalah...",
+                        options: ["80", "443", "5060", "8080"],
+                        correct: 2,
+                        explanation: "SIP biasanya menggunakan port default 5060 untuk komunikasi tidak terenkripsi. Jika menggunakan TLS (Transport Layer Security), biasanya SIP berjalan di port 5061."
+                    },
+                    {
+                        question: "RTCP (RTP Control Protocol) berfungsi untuk...",
+                        options: ["Mengirim suara", "Monitoring kualitas transmisi RTP", "Mengatur panggilan", "Enkripsi data"],
+                        correct: 1,
+                        explanation: "RTCP digunakan untuk memberikan laporan kualitas jaringan, seperti delay, jitter, dan packet loss. Dengan RTCP, sistem VoIP bisa menyesuaikan kualitas audio secara dinamis."
+                    },
+                    {
+                        question: "Pesan SIP 'INVITE' digunakan untuk...",
+                        options: ["Mengakhiri panggilan", "Memulai sesi panggilan", "Mengirim pesan teks", "Mengatur volume"],
+                        correct: 1,
+                        explanation: "Pesan SIP 'INVITE' dipakai untuk memulai sesi komunikasi, misalnya ketika pengguna A ingin menelpon pengguna B. INVITE akan membawa informasi sesi seperti codec dan alamat IP."
+                    },
+                    {
+                        question: "Apa fungsi dari SDP (Session Description Protocol)?",
+                        options: ["Mengenkripsi data", "Mendeskripsikan parameter sesi multimedia", "Mengompres audio", "Mengatur bandwidth"],
+                        correct: 1,
+                        explanation: "SDP dipakai bersama SIP untuk menjelaskan detail sesi, seperti jenis media (audio/video), codec yang digunakan, port tujuan, dan parameter lain agar komunikasi bisa terjadi."
+                    },
+                    {
+                        question: "Protokol transport apa yang biasanya digunakan SIP?",
+                        options: ["TCP saja", "UDP saja", "TCP dan UDP", "HTTP"],
+                        correct: 2,
+                        explanation: "SIP dapat berjalan di atas UDP untuk efisiensi, atau TCP untuk keandalan. Banyak implementasi mendukung keduanya, sehingga lebih fleksibel tergantung kebutuhan jaringan."
+                    },
+                    {
+                        question: "Apa yang dimaksud dengan SIP Proxy Server?",
+                        options: ["Server untuk menyimpan file", "Server yang meneruskan pesan SIP", "Server untuk enkripsi", "Server untuk kompresi"],
+                        correct: 1,
+                        explanation: "SIP Proxy Server bertugas meneruskan pesan SIP antar perangkat. Ia membantu routing panggilan, autentikasi pengguna, dan terkadang mengatur load balancing."
+                    }
+                ]
+            },
+            4: {
+                title: "Level 4: Benteng Keamanan",
+                material: "Keamanan VoIP sangat penting karena data suara dikirim melalui internet yang terbuka. Ancaman meliputi eavesdropping (penyadapan), spoofing, dan DoS attacks. Solusi keamanan termasuk enkripsi (SRTP, TLS), firewall, VPN, dan autentikasi yang kuat.",
+                questions: [
+                    {
+                        question: "Apa itu eavesdropping dalam konteks VoIP?",
+                        options: ["Meningkatkan kualitas suara", "Penyadapan percakapan", "Mempercepat panggilan", "Mengompres data"],
+                        correct: 1,
+                        explanation: "Eavesdropping adalah penyadapan percakapan VoIP. Penyerang dapat menangkap paket suara yang dikirim melalui jaringan internet, lalu mendengarkan isi komunikasi. Karena itu, enkripsi sangat penting untuk mencegah penyadapan."
+                    },
+                    {
+                        question: "SRTP adalah...",
+                        options: ["Simple RTP", "Secure Real-time Transport Protocol", "Super RTP", "Standard RTP"],
+                        correct: 1,
+                        explanation: "SRTP (Secure Real-time Transport Protocol) adalah versi aman dari RTP yang menambahkan enkripsi dan autentikasi pada aliran media. Dengan SRTP, data suara/video tidak bisa dengan mudah diintip atau dimodifikasi."
+                    },
+                    {
+                        question: "Fungsi firewall dalam sistem VoIP adalah...",
+                        options: ["Mengompres suara", "Memblokir akses tidak sah", "Mengatur panggilan", "Menyimpan data"],
+                        correct: 1,
+                        explanation: "Firewall berfungsi sebagai pengawas lalu lintas jaringan. Dalam VoIP, firewall mencegah akses tidak sah, serangan DoS, dan melindungi server SIP maupun perangkat klien dari ancaman luar."
+                    },
+                    {
+                        question: "VPN dalam VoIP digunakan untuk...",
+                        options: ["Mempercepat panggilan", "Membuat tunnel aman melalui internet", "Mengubah suara", "Menyimpan rekaman"],
+                        correct: 1,
+                        explanation: "VPN (Virtual Private Network) membuat jalur terenkripsi antara dua titik komunikasi. Dengan VPN, panggilan VoIP lebih aman karena data suara dilindungi dari penyadapan dan manipulasi pihak ketiga."
+                    },
+                    {
+                        question: "Apa itu SIP flooding attack?",
+                        options: ["Meningkatkan kualitas panggilan", "Serangan dengan mengirim banyak request SIP palsu", "Mengoptimalkan bandwidth", "Memperbaiki koneksi"],
+                        correct: 1,
+                        explanation: "SIP flooding adalah serangan DoS pada server VoIP dengan cara membanjiri server dengan request SIP palsu. Akibatnya, server kelebihan beban dan tidak bisa melayani panggilan sah."
+                    },
+                    {
+                        question: "TLS dalam VoIP digunakan untuk...",
+                        options: ["Mengompres audio", "Mengenkripsi signaling SIP", "Mempercepat panggilan", "Menyimpan log"],
+                        correct: 1,
+                        explanation: "TLS (Transport Layer Security) digunakan untuk mengenkripsi pesan signaling SIP, misalnya INVITE atau REGISTER. Ini mencegah penyadap mengetahui detail panggilan atau mengubah informasi sesi."
+                    },
+                    {
+                        question: "Apa yang dimaksud dengan VoIP spoofing?",
+                        options: ["Meningkatkan kualitas suara", "Memalsukan identitas penelepon", "Mengompres data", "Mempercepat koneksi"],
+                        correct: 1,
+                        explanation: "VoIP spoofing adalah teknik di mana penyerang memalsukan nomor telepon atau identitas penelepon. Misalnya, panggilan terlihat berasal dari bank padahal dari penipu. Solusinya adalah autentikasi SIP dan enkripsi."
+                    },
+                    {
+                        question: "ZRTP adalah protokol untuk...",
+                        options: ["Kompresi audio", "Key exchange untuk enkripsi end-to-end", "Routing panggilan", "Quality of Service"],
+                        correct: 1,
+                        explanation: "ZRTP digunakan untuk melakukan key exchange (pertukaran kunci) secara aman di jalur media. Dengan ZRTP, komunikasi VoIP bisa memiliki enkripsi end-to-end tanpa bergantung pada server pusat."
+                    },
+                    {
+                        question: "Apa fungsi dari STUN server dalam VoIP?",
+                        options: ["Menyimpan rekaman panggilan", "Membantu NAT traversal", "Mengompres audio", "Mengatur billing"],
+                        correct: 1,
+                        explanation: "STUN (Session Traversal Utilities for NAT) membantu perangkat VoIP yang berada di balik NAT (router) agar dapat mengetahui alamat IP publiknya. Hal ini penting supaya panggilan bisa tersambung dengan benar."
+                    },
+                    {
+                        question: "Serangan Man-in-the-Middle pada VoIP dapat dicegah dengan...",
+                        options: ["Menggunakan codec yang berbeda", "Implementasi enkripsi end-to-end", "Mengurangi bandwidth", "Menggunakan port yang berbeda"],
+                        correct: 1,
+                        explanation: "Serangan Man-in-the-Middle terjadi ketika penyerang berada di antara dua pihak komunikasi dan memodifikasi data. Pencegahannya adalah enkripsi end-to-end, sehingga data tetap aman meski jaringan tidak terpercaya."
+                    }
+                ]
+            },
+            5: {
+                title: "Level 5: Aula Aplikasi",
+                material: "Aplikasi VoIP modern sangat beragam, mulai dari Skype, WhatsApp Call, Zoom, Google Meet, hingga sistem enterprise seperti Cisco Unified Communications. Setiap aplikasi memiliki fitur khusus seperti video call, screen sharing, chat, dan integrasi dengan sistem bisnis.",
+                questions: [
+                    {
+                        question: "Apa perbedaan utama Zoom dibanding aplikasi VoIP lain seperti WhatsApp atau Skype?",
+                        options: [
+                                "Zoom fokus pada video conferencing dan webinar, sedangkan WhatsApp/Skype lebih fokus ke komunikasi personal",
+                                "Tidak ada perbedaan, semua aplikasi sama",
+                                "Zoom tidak bisa group call, sedangkan WhatsApp/Skype bisa",
+                                "Zoom hanya bisa digunakan di mobile, sedangkan WhatsApp/Skype di semua perangkat"
+                            ],
+                        correct: 0,
+                        explanation: "Zoom menonjol karena fokus pada video conferencing, meeting besar, dan webinar dengan ribuan peserta. Sebaliknya, WhatsApp atau Skype lebih ditujukan untuk komunikasi personal sehari-hari."
+
+                    },
+                    {
+                        question: "WhatsApp Call menggunakan teknologi...",
+                        options: ["Telepon tradisional", "VoIP", "Radio", "Satelit"],
+                        correct: 1,
+                        explanation: "WhatsApp Call menggunakan teknologi VoIP untuk mengirim suara melalui internet, bukan jaringan telepon biasa. Karena itu, panggilan tetap bisa dilakukan meski tanpa pulsa, asal ada koneksi internet."
+                    },
+                    {
+                        question: "Cisco Unified Communications adalah contoh...",
+                        options: ["Game online", "Sistem VoIP enterprise", "Media player", "Web browser"],
+                        correct: 1,
+                        explanation: "Cisco Unified Communications adalah sistem VoIP enterprise yang digunakan perusahaan besar. Fitur-fiturnya meliputi telepon IP, video call, voicemail, presence, hingga integrasi dengan sistem bisnis perusahaan."
+                    },
+                    {
+                        question: "Keuntungan utama Google Meet adalah...",
+                        options: ["Hanya bisa digunakan di Android", "Terintegrasi dengan Google Workspace", "Tidak gratis", "Kualitas suara buruk"],
+                        correct: 1,
+                        explanation: "Google Meet terintegrasi penuh dengan Google Workspace (Gmail, Calendar, Drive). Hal ini memudahkan kolaborasi, seperti membuat rapat langsung dari undangan kalender dan berbagi file dari Drive."
+                    },
+                    {
+                        question: "Fitur 'breakout rooms' dalam aplikasi VoIP berguna untuk...",
+                        options: ["Merusak panggilan", "Membagi peserta ke ruang diskusi kecil", "Mematikan suara", "Mengakhiri meeting"],
+                        correct: 1,
+                        explanation: "Breakout rooms adalah fitur untuk membagi peserta meeting besar ke dalam grup kecil. Sangat berguna untuk diskusi kelompok, pelatihan, atau kerja tim dalam sesi online."
+                    },
+                    {
+                        question: "Apa yang dimaksud dengan 'screen sharing' dalam VoIP?",
+                        options: ["Membagi layar menjadi dua", "Berbagi tampilan layar dengan peserta lain", "Mematikan layar", "Mengubah resolusi layar"],
+                        correct: 1,
+                        explanation: "Screen sharing memungkinkan pengguna menampilkan isi layar komputernya ke peserta lain. Fitur ini banyak digunakan untuk presentasi, demo software, atau pembelajaran jarak jauh."
+                    },
+                    {
+                        question: "Microsoft Teams terintegrasi dengan...",
+                        options: ["Google Workspace", "Microsoft 365", "Adobe Creative Suite", "AutoCAD"],
+                        correct: 1,
+                        explanation: "Microsoft Teams adalah bagian dari Microsoft 365, sehingga terintegrasi langsung dengan Word, Excel, PowerPoint, Outlook, dan OneDrive. Hal ini memudahkan kolaborasi bisnis dalam satu ekosistem."
+                    },
+                    {
+                        question: "Fitur 'virtual background' dalam aplikasi VoIP berfungsi untuk...",
+                        options: ["Mengubah suara", "Mengganti latar belakang video", "Mempercepat koneksi", "Mengompres data"],
+                        correct: 1,
+                        explanation: "Virtual background memungkinkan pengguna mengganti latar belakang video dengan gambar atau video lain. Fungsinya untuk menjaga privasi, estetika, atau branding saat meeting online."
+                    },
+                    {
+                        question: "Discord populer di kalangan...",
+                        options: ["Perusahaan besar", "Gamers dan komunitas online", "Rumah sakit", "Bank"],
+                        correct: 1,
+                        explanation: "Discord awalnya populer di kalangan gamers karena voice chat yang ringan dan stabil. Kini juga digunakan oleh komunitas online, developer, hingga grup belajar karena fitur channel teks, voice, dan integrasi bot."
+                    },
+                    {
+                        question: "Apa keunggulan utama Slack dalam komunikasi bisnis?",
+                        options: ["Hanya untuk video call", "Fokus pada messaging dan kolaborasi tim", "Tidak bisa voice call", "Hanya untuk mobile"],
+                        correct: 1,
+                        explanation: "Slack unggul dalam komunikasi berbasis pesan (chat) dengan channel yang terorganisir. Fitur utamanya adalah kolaborasi tim, integrasi dengan ribuan aplikasi (GitHub, Trello, Google Drive), dan notifikasi yang mudah dikontrol."
+                    }
+                ]
+            }
+        };
+
+        const aiMessages = {
+            welcome: "Halo! Aku Ananda, asisten AI perempuanmu. Selamat datang di Petualangan VoIP! Aku akan membantumu memahami dunia VoIP. Siap memulai petualangan?",
+            level1: "Halo Guardian! Pulau Suara menunggu sentuhanmu. Yuk, mulai petualangan dengan menjawab tantangan VoIP dasar untuk menghidupkan gema pertama komunikasi digital!",
+            level2: "Kota Kabel butuh bantuanmu! Ayo sambungkan perangkat yang terputus agar jaringan VoIP kembali hidup dan semua bisa terhubung.",
+            level3: "Menara Protokol menanti Guardian pintar! Jawab pertanyaan VoIP berikut untuk menyalakan kembali sinyal dan menjaga menara tetap ceria.",
+            level4: "Benteng Keamanan ingin tetap aman bersama kamu! Pilih strategi digital yang tepat untuk melindungi benteng dan teman-temannya.",
+            level5: "Petualangan terakhir! Aula Aplikasi menunggu sentuhanmu. Tentukan cara penggunaan VoIP yang tepat untuk memulihkan dunia digital dengan penuh harmoni.",
+            encouragement: ["Bagus sekali!", "Kamu hebat!", "Terus semangat!", "Jawaban yang tepat!", "Luar biasa!", "Pintar sekali!", "Keren banget!"],
+            hints: [
+                "Ingat, VoIP sama dengan Voice over Internet Protocol",
+                "Pikirkan tentang perangkat yang kamu gunakan sehari-hari",
+                "SIP untuk mengatur, RTP untuk mengirim data",
+                "Keamanan selalu penting dalam teknologi",
+                "VoIP ada di mana-mana di sekitar kita!"
+            ],
+            victory: "Selamat! Kamu berhasil menyelesaikan semua level! Kamu benar-benar Guardian of Echo yang hebat! Aku Ananda bangga padamu!",
+            levelComplete: "Level selesai! Kamu semakin pintar dalam memahami VoIP!"
+            
+        };
+
+        // Initialize game
+        function initGame() {
+            createStars();
+            initAIVoice();
+            showAIMessage(aiMessages.welcome);
+            // Start with gentle menu music on setup screen
+            setTimeout(() => startBackgroundMusic('menu'), 1000);
+            // Show welcome message after a short delay
+            setTimeout(() => {
+                showAIMessage(aiMessages.welcome);
+            }, 1500);
+        }
+
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Avatar selection
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                gameState.playerAvatar = this.dataset.avatar;
+            });
+        });
+
+        function startGame() {
+            const name = document.getElementById('playerName').value;
+            const playerClass = document.getElementById('playerClass').value;
+            const difficulty = document.getElementById('difficulty').value;
+
+            if (!name || !playerClass || !gameState.playerAvatar) {
+                alert('Mohon lengkapi semua data!');
+                return;
+            }
+
+            gameState.playerName = name;
+            gameState.playerClass = playerClass;
+            gameState.difficulty = difficulty;
+
+            showScreen('introScreen');
+            playSound('start');
+            startBackgroundMusic('intro');
+        }
+
+        function addItemToInventory(itemId) {
+            if (!gameState.inventory.includes(itemId)) {
+                gameState.inventory.push(itemId);
+                updateInventoryDisplay();
+                
+                // Show reward notification for new items (except starting item)
+                if (itemId !== 'voip-analyzer' || gameState.inventory.length > 1) {
+                    showRewardNotification(itemId);
+                }
+            }
+        }
+
+        function updateInventoryDisplay() {
+            const inventoryContainer = document.getElementById('inventoryItems');
+            inventoryContainer.innerHTML = '';
+
+            gameState.inventory.forEach((itemId, index) => {
+                const item = gameItems[itemId];
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'inventory-item';
+                
+                // Highlight current location item
+                if (itemId === 'voip-analyzer') {
+                    itemDiv.classList.add('current-location');
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="item-icon">${item.icon}</div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-description">${item.description}</div>
+                    </div>
+                `;
+
+                inventoryContainer.appendChild(itemDiv);
+            });
+        }
+
+        function startLoadingScene() {
+            playSound('click'); // efek klik aja
+
+            let progress = 0;
+            const progressFill = document.getElementById("progressFill");
+            const loadingText = document.getElementById("loadingText");
+            const startBtn = document.getElementById("startBtn");
+
+            const loadingInterval = setInterval(() => {
+            progress += 10;
+            progressFill.style.width = progress + "%";
+            loadingText.textContent = "Memuat sistem... " + progress + "%";
+
+            if (progress >= 100) {
+                clearInterval(loadingInterval);
+                loadingText.textContent = "Sistem siap!";
+                startBtn.style.display = "inline-block"; // tombol baru muncul setelah selesai
+            }
+        }, 500);
+    }
+
+        function goToMission() {
+        playSound('click');
+        showLevelMap(); // masuk ke map level
+    }
+
+        function showRewardNotification(itemId) {
+            const item = gameItems[itemId];
+            
+            document.getElementById('rewardIcon').textContent = item.icon;
+            document.getElementById('rewardName').textContent = item.name;
+            document.getElementById('rewardDesc').textContent = item.description;
+            
+            document.getElementById('rewardNotification').style.display = 'block';
+            
+            playSound('levelComplete');
+            showAIMessage(`Selamat! Kamu mendapat ${item.name}! ${item.description}`);
+        }
+
+        function closeRewardNotification() {
+            document.getElementById('rewardNotification').style.display = 'none';
+            playSound('click');
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+            document.getElementById(screenId).classList.add('active');
+
+        // kalau bukan setupScreen → tampilkan skor
+        if (screenId !== 'setupScreen') {
+            document.getElementById('scoreDisplay').style.display = 'block';
+            updateScoreDisplay();
+        }
+
+        // kalau masuk introScreen → jalankan loading
+        if (screenId === 'introScreen') {
+            startLoadingScene();
+        }
+    }
+
+
+        function showLevelMap() {
+            showScreen('levelMapScreen');
+            updateProgress();
+            updateLevelAccess();
+            updateMapPath();
+            startBackgroundMusic('menu');
+        }
+
+        function updateProgress() {
+            const progress = (gameState.completedLevels.length / 5) * 100;
+            document.getElementById('gameProgress').style.width = progress + '%';
+        }
+
+        function updateLevelAccess() {
+            for (let i = 1; i <= 5; i++) {
+            let levelNode = document.getElementById(`level${i}`);
+            if (!levelNode) continue;
+
+            // reset dulu
+                levelNode.classList.remove('available', 'completed', 'locked');
+                levelNode.onclick = null;
+                levelNode.onmouseover = null;
+
+            if (gameState.completedLevels.includes(i)) {
+            // ✅ Level sudah selesai → emas
+                levelNode.classList.add('completed');
+                levelNode.onclick = () => showMissionInvitation(i);
+                levelNode.onmouseover = () => playSound('hover');
+        } else if (i === 1 || (gameState.scores[i - 1] && gameState.scores[i - 1] >= 70)) {
+            // 🔓 Level terbuka tapi belum selesai → biru
+                levelNode.classList.add('available');
+                levelNode.onclick = () => showMissionInvitation(i);
+                levelNode.onmouseover = () => playSound('hover');
+        } else {
+            // 🔒 Level masih terkunci → abu
+                levelNode.classList.add('locked');
+        }
+    }
+}
+
+        function updateMapPath() {
+            const treasurePath = document.getElementById('treasurePath');
+            const completedPercentage = (gameState.completedLevels.length / 5) * 100;
+            
+            if (treasurePath) {
+                if (completedPercentage > 0) {
+                    treasurePath.classList.add('completed');
+                    // Animate the path completion
+                    treasurePath.style.strokeDasharray = `${completedPercentage * 2}, ${200 - (completedPercentage * 2)}`;
+                } else {
+                    treasurePath.classList.remove('completed');
+                    treasurePath.style.strokeDasharray = '12,6';
+                }
+            }
+        }
+
+        function showMissionInvitation(levelNum) {
+    if (levelNum > 1 && !gameState.completedLevels.includes(levelNum - 1)) {
+        return;
+    }
+
+    gameState.selectedLevel = levelNum;
+    
+    // Play friendly mission sound
+    playSound('mission');
+    
+    // Show AI encouragement message
+    showAIMessage("✨ Guardian, misi baru sudah siap untukmu! ");
+    
+    // Update mission details dengan versi lebih positif
+    const missionMessages = {
+        1: "🏝️ PULAU SUARA - Langkah pertamamu! Di sini kamu akan mengenal dasar VoIP dan memahami bagaimana komunikasi digital bekerja.",
+        2: "🏙️ KOTA KABEL - Infrastruktur menantimu! Pelajari perangkat VoIP dan bagaimana semua tersambung menjadi satu sistem.",
+        3: "🗼 MENARA PROTOKOL - Waktunya mendalami SIP & RTP! Pahami protokol inti agar komunikasi berjalan lancar.",
+        4: "🏰 BENTENG KEAMANAN - Tantangan lebih besar! Pelajari keamanan VoIP dan bagaimana melindungi sistem dari gangguan.",
+        5: "🏛️ AULA APLIKASI - Pertarungan akhir! Terapkan semua ilmu VoIP untuk menaklukkan Virus Hening dan menyelamatkan komunikasi global."
+    };
+    
+    document.getElementById('missionDescription').textContent = missionMessages[levelNum];
+    
+    // ✅ Show invitation modal (pakai ID baru)
+    document.getElementById('missionInvitation').style.display = 'flex';
+}
+
+function acceptMission() {
+    playSound('click');
+    document.getElementById('missionInvitation').style.display = 'none';
+    startLevel(gameState.selectedLevel);
+}
+
+function cancelMission() {
+    playSound('click');
+    document.getElementById('missionInvitation').style.display = 'none';
+    showAIMessage("Tidak masalah, Guardian. Kamu bisa kembali kapan saja ketika sudah siap 🚀");
+}
+
+
+        function startLevel(levelNum) {
+            // Cek apakah level sebelumnya sudah >= 70
+            if (levelNum > 1 && (!gameState.scores[levelNum - 1] || gameState.scores[levelNum - 1] < 70)) {
+                showAIMessage(" Kamu harus dapat minimal 70 di level " + (levelNum - 1) + " dulu sebelum lanjut!");
+                playSound('incorrect');
+                return;
+    }
+
+                gameState.currentLevel = levelNum;
+                gameState.currentQuestionIndex = 0;
+
+            // 🔑 reset skor untuk level ini
+                gameState.scores[levelNum] = 0;  
+                gameState.score = 0; // biar papan skor juga dari 0
+
+                showScreen('gameScreen');
+                loadLevel(levelNum);
+                showAIMessage(aiMessages[`level${levelNum}`]);
+                playSound('levelStart');
+                startBackgroundMusic(`level${levelNum}`);
+        }
+
+
+        function loadLevel(levelNum) {
+            const level = levels[levelNum];
+            document.getElementById('levelTitle').textContent = level.title;
+            document.getElementById('materialContent').textContent = level.material;
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const level = levels[gameState.currentLevel];
+            const question = level.questions[gameState.currentQuestionIndex];
+            
+            document.getElementById('questionText').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = option;
+                optionDiv.onclick = () => {
+                    playSound('click');
+                    selectAnswer(index);
+                };
+                optionDiv.onmouseover = () => playSound('hover');
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            document.getElementById('nextButton').style.display = 'none';
+        }
+
+        function selectAnswer(selectedIndex) {
+            const level = levels[gameState.currentLevel];
+            const question = level.questions[gameState.currentQuestionIndex];
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach((option, index) => {
+                option.onclick = null;
+                if (index === question.correct) {
+                    option.classList.add('correct');
+                } else if (index === selectedIndex) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            if (selectedIndex === question.correct) {
+                gameState.score += getDifficultyMultiplier() * 10;
+                playSound('correct');
+                showAIMessage(aiMessages.encouragement[Math.floor(Math.random() * aiMessages.encouragement.length)]);
+            } else {
+                playSound('incorrect');
+                showAIMessage("Kurang tepat. Penjelasan: " + question.explanation);
+            }
+            
+            updateScoreDisplay();
+            document.getElementById('nextButton').style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            gameState.currentQuestionIndex++;
+            const level = levels[gameState.currentLevel];
+            
+            if (gameState.currentQuestionIndex >= level.questions.length) {
+                completeLevel();
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function completeLevel() {
+    const level = gameState.currentLevel;
+
+    // simpan nilai final untuk level ini
+    gameState.scores[level] = gameState.score;
+
+    if (gameState.score >= 70) {
+        if (!gameState.completedLevels.includes(level)) {
+            gameState.completedLevels.push(level);
+        }
+        showAIMessage(" Level " + level + " selesai! Nilaimu " + gameState.score + ". Level berikutnya terbuka!");
+        playSound('levelComplete');
+    } else {
+        showAIMessage(" Nilaimu " + gameState.score + ". Kamu butuh minimal 70 untuk membuka level berikutnya. Coba lagi ya!");
+        playSound('incorrect');
+
+        // tombol retry biar tidak dobel
+        let oldRetry = document.getElementById("retryButton");
+        if (oldRetry) oldRetry.remove();
+
+        const retryButton = document.createElement("button");
+        retryButton.id = "retryButton";
+        retryButton.textContent = "Ulang Level";
+        retryButton.className = "btn";
+        retryButton.onclick = () => {
+            playSound('click');
+            restartLevel(level);
+        };
+        document.getElementById("gameScreen").appendChild(retryButton);
+    }
+
+    // update akses level & peta
+    updateLevelAccess();
+    updateMapPath();
+
+    // 🔑 Cek apakah semua level selesai dengan nilai >= 70
+    let allPassed = true;
+    for (let i = 1; i <= 5; i++) {
+        if (!gameState.scores[i] || gameState.scores[i] < 70) {
+            allPassed = false;
+            break;
+        }
+    }
+
+    if (allPassed) {
+        showFinalScreen(); // 🎉 tampilkan sertifikat otomatis
+    } else {
+        showLevelMap(); // kalau belum semua selesai, kembali ke peta
+    }
+}
+
+
+            // Fungsi untuk ulang level
+        function restartLevel(level) {
+            gameState.currentQuestionIndex = 0;
+            gameState.score = 0;
+            gameState.currentLevel = level;
+            loadQuestion(); // mulai lagi dari soal pertama
+}
+
+
+        function showFinalScreen() {
+            showScreen('finalScreen');
+            document.getElementById('certificateName').textContent = gameState.playerName;
+            document.getElementById('finalScore').textContent = gameState.score;
+
+            // Hitung total nilai dari semua level
+                let totalScore = 0;
+                for (let i = 1; i <= 5; i++) {
+            if (gameState.scores[i]) {
+                 totalScore += gameState.scores[i];
+        }
+    }
+
+            // tampilkan di sertifikat
+                document.getElementById('finalScore').textContent = totalScore;
+            
+            // Start victory celebration
+            createBirthdayConfetti();
+            playVictoryMelody();
+            startBackgroundMusic('victory');
+            showAIMessage(aiMessages.victory);
+        }
+
+        function checkCertificateUnlock() {
+            let allPassed = true;
+
+            for (let i = 1; i <= 5; i++) {
+            if (!gameState.scores[i] || gameState.scores[i] < 70) {
+            allPassed = false;
+            break;
+        }
+    }
+
+            if (allPassed) {
+                showFinalScreen();
+    }
+}
+
+        function getDifficultyMultiplier() {
+            switch (gameState.difficulty) {
+                case 'easy': return 1;
+                case 'medium': return 1.5;
+                case 'hard': return 2;
+                default: return 1;
+            }
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('currentScore').textContent = gameState.score;
+            document.getElementById('currentLevel').textContent = gameState.currentLevel;
+        }
+
+        function toggleAISpeech() {
+            const aiSpeech = document.getElementById('aiSpeech');
+            aiSpeech.classList.toggle('show');
+        }
+
+        function showAIMessage(message) {
+            document.getElementById('aiMessage').textContent = message;
+            const aiSpeech = document.getElementById('aiSpeech');
+            aiSpeech.classList.add('show');
+            
+            // Speak the message with AI voice
+            speakAIMessage(message);
+            
+            setTimeout(() => {
+                aiSpeech.classList.remove('show');
+            }, 4000);
+        }
+
+        // Audio System
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let backgroundMusic = null;
+        
+        // AI Voice System
+        let aiVoice = null;
+        let speechSynthesis = window.speechSynthesis;
+        
+        function initAIVoice() {
+            // Wait for voices to load
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.addEventListener('voiceschanged', () => {
+                    setupAIVoice();
+                });
+            } else {
+                setupAIVoice();
+            }
+        }
+        
+        function setupAIVoice() {
+    const voices = speechSynthesis.getVoices();
+
+    // Cari dulu suara Indonesian female
+    const femaleKeywords = ["gadis", "female", "wanita", "perempuan"];
+    aiVoice = voices.find(voice =>
+        voice.lang === "id-ID" &&
+        femaleKeywords.some(kw => voice.name.toLowerCase().includes(kw))
+    );
+
+    // Kalau nggak ketemu, ambil Indonesian apa saja
+    if (!aiVoice) {
+        aiVoice = voices.find(voice => voice.lang === "id-ID");
+    }
+
+    // Kalau tetap nggak ada, fallback ke English female
+    if (!aiVoice) {
+        const fallbackVoices = [
+            "google uk english female",
+            "google us english female",
+            "microsoft zira",
+            "microsoft hazel",
+            "samantha", "victoria", "serena", "karen",
+            "moira", "tessa", "veena", "fiona"
+        ];
+        aiVoice = voices.find(voice =>
+            fallbackVoices.some(name => voice.name.toLowerCase().includes(name))
+        );
+    }
+
+    // Kalau masih nggak ada, pakai default pertama
+    if (!aiVoice) {
+        aiVoice = voices[0];
+    }
+
+    console.log("AI Voice selected:", aiVoice?.name || "Default");
+}
+
+   
+        function speakAIMessage(text, rate = 1.0, pitch = 1.0) {
+            if (!soundEnabled || !voiceEnabled || !text) return;
+            
+            // Stop any current speech
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            if (aiVoice) {
+                utterance.voice = aiVoice;
+            }
+            
+            // Natural human-like settings
+            utterance.rate = rate; // Normal speaking speed
+            utterance.pitch = pitch; // Natural pitch, not artificially high
+            utterance.volume = 0.9; // Clear volume
+            
+            // Add some personality to the AI voice
+            utterance.onstart = () => {
+                const aiCompanion = document.getElementById('aiCompanion');
+                aiCompanion.style.animation = 'none';
+                aiCompanion.style.animation = 'float 0.5s ease-in-out infinite alternate';
+            };
+            
+            utterance.onend = () => {
+                const aiCompanion = document.getElementById('aiCompanion');
+                aiCompanion.style.animation = 'float 3s ease-in-out infinite';
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        function createTone(frequency, duration, type = 'sine') {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        function playMelody(notes, duration = 0.2) {
+            notes.forEach((note, index) => {
+                setTimeout(() => {
+                    createTone(note, duration);
+                }, index * duration * 1000);
+            });
+        }
+        
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            // Resume audio context if suspended (required by browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            const aiCompanion = document.getElementById('aiCompanion');
+            aiCompanion.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                aiCompanion.style.transform = 'scale(1)';
+            }, 200);
+            
+            switch(type) {
+                case 'start':
+                    playMelody([523, 659, 784, 1047], 0.3); // C-E-G-C melody
+                    break;
+                case 'correct':
+                    playMelody([659, 784, 1047], 0.15); // Success sound
+                    break;
+                case 'incorrect':
+                    createTone(220, 0.5, 'sawtooth'); // Error buzz
+                    break;
+                case 'levelStart':
+                    playMelody([392, 523, 659], 0.25); // Level start
+                    break;
+                case 'levelComplete':
+                    playMelody([523, 659, 784, 1047, 1319], 0.2); // Victory fanfare
+                    break;
+                case 'victory':
+                    playMelody([523, 659, 784, 1047, 1319, 1568, 2093], 0.3); // Final victory
+                    break;
+                case 'click':
+                    createTone(800, 0.1); // Button click
+                    break;
+                case 'hover':
+                    createTone(600, 0.05); // Hover sound
+                    break;
+            }
+        }
+        
+        // Background Music System
+        let currentMusicTheme = null;
+        let musicIntervals = [];
+        
+        const musicThemes = {
+            intro: {
+                name: "Virus Hening Alert",
+                frequencies: [110, 146, 185, 220], // Very dark, ominous tones
+                pattern: [0, 3, 1, 2, 0, 3, 2, 1, 0], // Irregular, threatening pattern
+                tempo: 1200, // Much faster for tension
+                filter: 400, // Lower filter for darker sound
+                volume: 0.06, // Louder for impact
+                dissonance: true // Add dissonant harmonies
+            },
+            menu: {
+                name: "Digital Horizon",
+                frequencies: [261, 329, 392, 523], // C major - hopeful
+                pattern: [0, 1, 2, 1, 0, 2, 3, 2], // Flowing pattern
+                tempo: 3000,
+                filter: 1000,
+                volume: 0.04
+            },
+            level1: {
+                name: "Island Waves",
+                frequencies: [174, 220, 261, 329], // Calm, oceanic
+                pattern: [0, 2, 1, 3, 2, 0], // Wave-like pattern
+                tempo: 4000,
+                filter: 800,
+                volume: 0.035
+            },
+            level2: {
+                name: "Urban Pulse",
+                frequencies: [196, 247, 294, 370], // Mechanical, urban
+                pattern: [0, 1, 0, 2, 1, 3, 2], // Rhythmic pattern
+                tempo: 2500,
+                filter: 700,
+                volume: 0.04
+            },
+            level3: {
+                name: "Tower Resonance",
+                frequencies: [146, 185, 220, 277], // Deep, resonant
+                pattern: [3, 2, 1, 0, 1, 2], // Ascending/descending
+                tempo: 3500,
+                filter: 900,
+                volume: 0.038
+            },
+            level4: {
+                name: "Fortress Defense",
+                frequencies: [110, 138, 165, 207], // Dark, protective
+                pattern: [0, 3, 1, 2, 3, 0, 2], // Defensive pattern
+                tempo: 2200,
+                filter: 500,
+                volume: 0.042
+            },
+            level5: {
+                name: "Hall of Applications",
+                frequencies: [293, 369, 440, 554], // Bright, triumphant
+                pattern: [0, 1, 2, 3, 2, 1, 0, 2], // Celebratory
+                tempo: 2800,
+                filter: 1200,
+                volume: 0.045
+            },
+            victory: {
+                name: "Digital Victory",
+                frequencies: [523, 659, 784, 1047], // High, victorious
+                pattern: [0, 1, 2, 3, 2, 1, 3, 0], // Victory fanfare
+                tempo: 1800,
+                filter: 1500,
+                volume: 0.05
+            }
+        };
+        
+        function startBackgroundMusic(theme = 'menu') {
+            stopBackgroundMusic();
+            
+            if (!soundEnabled) return;
+            
+            currentMusicTheme = theme;
+            const musicData = musicThemes[theme];
+            let patternIndex = 0;
+            
+            const playThemeNote = () => {
+                if (audioContext.state === 'suspended' || !soundEnabled) return;
+                
+                const frequency = musicData.frequencies[musicData.pattern[patternIndex]];
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(musicData.filter, audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(musicData.volume, audioContext.currentTime + 0.5);
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 3);
+                
+                patternIndex = (patternIndex + 1) % musicData.pattern.length;
+            };
+            
+            // Play first note immediately
+            playThemeNote();
+            
+            // Set up interval for continuous music
+            const musicInterval = setInterval(() => {
+                if (currentMusicTheme === theme && soundEnabled) {
+                    playThemeNote();
+                } else {
+                    clearInterval(musicInterval);
+                }
+            }, musicData.tempo);
+            
+            musicIntervals.push(musicInterval);
+            
+            // Add ambient harmony every few notes
+            const harmonyInterval = setInterval(() => {
+                if (currentMusicTheme === theme && soundEnabled && Math.random() > 0.6) {
+                    const harmonyFreq = musicData.frequencies[Math.floor(Math.random() * musicData.frequencies.length)] * 0.5;
+                    
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(harmonyFreq, audioContext.currentTime);
+                    oscillator.type = 'triangle';
+                    
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(musicData.volume * 0.3, audioContext.currentTime + 1);
+                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 4);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 4);
+                }
+            }, musicData.tempo * 2);
+            
+            // Add special tension effects for intro/warning theme
+            if (theme === 'intro' && musicData.dissonance) {
+                const tensionInterval = setInterval(() => {
+                    if (currentMusicTheme === theme && soundEnabled && Math.random() > 0.5) {
+                        // Create dissonant warning sound
+                        const baseFreq = 120;
+                        const dissonantFreq = baseFreq * 1.414; // Tritone interval (devil's interval)
+                        
+                        [baseFreq, dissonantFreq].forEach((freq, index) => {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            const filter = audioContext.createBiquadFilter();
+                            
+                            oscillator.connect(filter);
+                            filter.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                            oscillator.type = 'sawtooth'; // Harsh sound for warning
+                            
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(250 + Math.random() * 150, audioContext.currentTime);
+                            filter.Q.setValueAtTime(5, audioContext.currentTime); // High resonance for piercing sound
+                            
+                            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                            gainNode.gain.linearRampToValueAtTime(0.12, audioContext.currentTime + 0.05);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
+                            
+                            oscillator.start(audioContext.currentTime + index * 0.03);
+                            oscillator.stop(audioContext.currentTime + 1.5);
+                        });
+                    }
+                }, musicData.tempo * 0.8);
+                
+                musicIntervals.push(tensionInterval);
+                
+                // Add random glitch effects for virus theme
+                const glitchInterval = setInterval(() => {
+                    if (currentMusicTheme === theme && soundEnabled && Math.random() > 0.7) {
+                        const glitchFreq = 60 + Math.random() * 120;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        const filter = audioContext.createBiquadFilter();
+                        
+                        oscillator.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(glitchFreq, audioContext.currentTime);
+                        oscillator.type = 'square'; // Digital glitch sound
+                        
+                        filter.type = 'highpass';
+                        filter.frequency.setValueAtTime(200, audioContext.currentTime);
+                        
+                        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01);
+                        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.08);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.08);
+                    }
+                }, 400); // More frequent glitches
+                
+                musicIntervals.push(glitchInterval);
+                
+                // Add deep bass rumble for ominous feeling
+                const bassInterval = setInterval(() => {
+                    if (currentMusicTheme === theme && soundEnabled && Math.random() > 0.8) {
+                        const bassFreq = 40 + Math.random() * 30;
+                        
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(bassFreq, audioContext.currentTime);
+                        oscillator.type = 'sine';
+                        
+                        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.08, audioContext.currentTime + 0.5);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 3);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 3);
+                    }
+                }, musicData.tempo * 2);
+                
+                musicIntervals.push(bassInterval);
+            }
+            
+            musicIntervals.push(harmonyInterval);
+        }
+        
+        function stopBackgroundMusic() {
+            currentMusicTheme = null;
+            musicIntervals.forEach(interval => clearInterval(interval));
+            musicIntervals = [];
+        }
+
+        let soundEnabled = true;
+        let voiceEnabled = true;
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundToggle = document.getElementById('soundToggle');
+            soundToggle.textContent = soundEnabled ? '🔊': '🔇' ;
+
+            if (!soundEnabled) {
+                stopBackgroundMusic();
+                speechSynthesis.cancel(); // Stop any current speech
+            } else {
+                // Resume appropriate music based on current screen
+                const activeScreen = document.querySelector('.screen.active').id;
+                if (activeScreen === 'setupScreen' || activeScreen === 'levelMapScreen') {
+                    startBackgroundMusic('menu');
+                } else if (activeScreen === 'introScreen') {
+                    startBackgroundMusic('intro');
+                } else if (activeScreen === 'gameScreen') {
+                    startBackgroundMusic(`level${gameState.currentLevel}`);
+                } else if (activeScreen === 'finalScreen') {
+                    startBackgroundMusic('victory');
+                }
+            }
+        }
+        
+        function toggleAIVoice() {
+            voiceEnabled = !voiceEnabled;
+            const voiceToggle = document.getElementById('voiceToggle');
+            voiceToggle.textContent = voiceEnabled ? '🎤 ': '🔇' ;
+            
+            if (!voiceEnabled) {
+                speechSynthesis.cancel(); // Stop any current speech
+            }
+        }
+        
+        function restartGame() {
+            gameState = {
+                playerName: '',
+                playerClass: '',
+                playerAvatar: '',
+                difficulty: 'medium',
+                currentLevel: 1,
+                score: 0,
+                completedLevels: [],
+                currentQuestionIndex: 0
+            };
+            
+            // Reset level access
+            for (let i = 2; i <= 5; i++) {
+                const levelCard = document.getElementById(`level${i}`);
+                levelCard.classList.add('locked');
+                levelCard.onclick = null;
+            }
+            
+            stopBackgroundMusic();
+            showScreen('setupScreen');
+            document.getElementById('scoreDisplay').style.display = 'none';
+        }
+
+        // Birthday Celebration Functions
+        function createBirthdayConfetti() {
+            const colors = ['#ff00ff', '#00f5ff', '#ffff00', '#ff0080', '#00ff80', '#8000ff'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.innerHTML = ['🎊', '🎉', '✨', '🌟', '💫'][Math.floor(Math.random() * 5)];
+                    confetti.style.cssText = `
+                        position: fixed;
+                        top: -50px;
+                        left: ${Math.random() * 100}%;
+                        font-size: ${Math.random() * 20 + 20}px;
+                        z-index: 999;
+                        pointer-events: none;
+                        animation: confettiFall ${Math.random() * 3 + 2}s linear forwards;
+                    `;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }, i * 100);
+            }
+            
+            // Add CSS animation for confetti
+            if (!document.getElementById('confettiStyle')) {
+                const style = document.createElement('style');
+                style.id = 'confettiStyle';
+                style.textContent = `
+                    @keyframes confettiFall {
+                        to {
+                            transform: translateY(100vh) rotate(720deg);
+                            opacity: 0;
+                        }
+                    }
+                    @keyframes pulse {
+                        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+                        50% { transform: translate(-50%, -50%) scale(1.1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        
+        function createFireworks() {
+            const colors = ['#ff00ff', '#00f5ff', '#ffff00', '#ff0080', '#00ff80'];
+            
+            for (let i = 0; i < 12; i++) {
+                setTimeout(() => {
+                    const firework = document.createElement('div');
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    firework.style.cssText = `
+                        position: fixed;
+                        top: ${Math.random() * 50 + 20}%;
+                        left: ${Math.random() * 80 + 10}%;
+                        width: 4px;
+                        height: 4px;
+                        background: ${color};
+                        border-radius: 50%;
+                        z-index: 998;
+                        pointer-events: none;
+                    `;
+                    
+                    document.body.appendChild(firework);
+                    
+                    // Create explosion effect
+                    setTimeout(() => {
+                        for (let j = 0; j < 8; j++) {
+                            const spark = document.createElement('div');
+                            const angle = (j * 45) * Math.PI / 180;
+                            const distance = Math.random() * 100 + 50;
+                            
+                            spark.style.cssText = `
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                width: 3px;
+                                height: 3px;
+                                background: ${color};
+                                border-radius: 50%;
+                                animation: sparkFly 1s ease-out forwards;
+                                transform: translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px);
+                            `;
+                            
+                            firework.appendChild(spark);
+                        }
+                        
+                        setTimeout(() => {
+                            firework.remove();
+                        }, 1500);
+                    }, 100);
+                }, i * 300);
+            }
+            
+            // Add spark animation
+            if (!document.getElementById('fireworkStyle')) {
+                const style = document.createElement('style');
+                style.id = 'fireworkStyle';
+                style.textContent = `
+                    @keyframes sparkFly {
+                        0% { opacity: 1; transform: scale(1); }
+                        100% { opacity: 0; transform: scale(0.5); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        
+        function playVictoryMelody() {
+            if (!soundEnabled) return;
+            
+            // Epic victory fanfare melody
+            const victoryNotes = [
+                523, 659, 784, 1047, // Rising triumph
+                1047, 932, 784, 659, // Descending power
+                523, 659, 784, 1047, 1319, // Building excitement  
+                1047, 784, 659, 523, // Resolution
+                392, 523, 659, 784, 1047, 1319, 1568, // Final crescendo
+                2093, 1568, 1319, 1047, 784, 659, 523 // Grand finale
+            ];
+            
+            victoryNotes.forEach((note, index) => {
+                setTimeout(() => {
+                    createTone(note, 0.35, 'sine');
+                    // Add harmony for richer sound
+                    if (index % 2 === 0) {
+                        createTone(note * 0.75, 0.35, 'triangle');
+                    }
+                }, index * 250);
+            });
+            
+            // Add fireworks during the melody
+            setTimeout(() => {
+                createFireworks();
+            }, 1500);
+            
+            // Add triumphant chord at the end
+            setTimeout(() => {
+                [523, 659, 784, 1047].forEach(freq => {
+                    createTone(freq, 1.5, 'sine');
+                });
+            }, victoryNotes.length * 250);
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972e926e134be9d9',t:'MTc1NTgyNTg4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
